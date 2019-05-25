@@ -1,3 +1,70 @@
+function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
+  const attrsString = Object.entries(tagAttrs).map(
+      ([key, value]) => value ? `${key}="${value}"` : '').join(' ');
+  const tag = `<${tagName} ${attrsString} />`;
+
+  let index = 0;
+  for (; i<tokens.length; i++) {
+    if (tokens[i][1] == 'word') {
+      const curWord = tokens[i][0];
+      const curLen = curWord.length;
+      if (cnt + curLen >= offset) {
+        const newTokens = [
+          [curWord.slice(0, offset-cnt), 'word'],
+          [tag, 'tag'],
+          [curWord.slice(offset-cnt), 'word'],
+        ];
+        tokens.splice(i, 1, ...newTokens);
+        index = i + 1;
+        break;
+      }
+      cnt += curLen;
+    } else if (tokens[i][1] == 'enter') {
+      cnt += 1;
+      if (cnt == offset) {
+        tokens.splice(i + 1, 0, [tag, 'tag']);
+        index = i + 1;
+        break;
+      }
+    }
+  }
+  if (i == tokens.length) {
+    tokens.push([tag, 'tag']);
+    index = i;
+  }
+  return [index, offset];
+}
+
+function generateXml(content, sentences, matches) {
+  const xmlDoc = $.parseXML(content);
+  const $xml = $(xmlDoc);
+  const docCont = $xml.find('doc_content').html();
+
+  const tokens = tokenize(docCont);
+  const flattenMatches = flattenMatched(matches);
+  let ptr = 0;
+  let state = [0, 0];
+  let offset = 0;
+  for (let i=0; i < sentences.length; i++) {
+    if (ptr < flattenMatches.length && flattenMatches[ptr].index == i) {
+      state = insertTag(tokens, offset, 'AlignBegin', {
+        'Type': 'test',
+        'RedId': flattenMatches[ptr].id,
+        'Key': i,
+      }, state);
+      offset += sentences[i].length;
+      state = insertTag(tokens, offset, 'AlignEnd', {'Key': i}, state);
+      ptr++;
+    } else {
+      offset += sentences[i].length;
+    }
+  }
+
+  const result = tokens.map((x) => x[0]).join('');
+  $xml.find('doc_content').html(result);
+  return new XMLSerializer().serializeToString($xml.get()[0].documentElement);
+}
+
 function getText(doc) {
   const xmlDoc = $.parseXML(doc);
   const $xml = $(xmlDoc);
@@ -107,6 +174,8 @@ class Literature {
         $sentences.eq(index).addClass('highlight').data('identity', id);
       }
     }
+
+    this.$dom.find('#save-button').removeAttr('disabled');
   }
 
   resetMatch() {
@@ -114,6 +183,7 @@ class Literature {
     delete this.longest;
     const $sentences = this.$dom.find('.sentence');
     $sentences.removeClass('highlight').removeData('identity');
+    this.$dom.find('#save-button').attr('disabled', true);
   }
 
   highlightSentence(id) {
@@ -139,18 +209,24 @@ class Literature {
     // Bind upload file.
     this.$dom.find('.txtfile').click(() => $(event.currentTarget).val(''))
         .on('change', (event) => {
-          this.uploadText(event.currentTarget.files[0])
-              .then(() => this.displayContent());
+          this.uploadText(event.currentTarget.files[0]).then(() => {
+            this.$dom.find('#edit-button').removeAttr('disabled');
+            this.displayContent();
+          });
         });
     this.$dom.find('.xmlfile').click(() => $(event.currentTarget).val(''))
         .on('change', (event) => {
-          this.uploadXml(event.currentTarget.files[0])
-              .then(() => this.displayContent());
+          this.uploadXml(event.currentTarget.files[0]).then(() => {
+            this.$dom.find('#edit-button').attr('disabled', true);
+            this.displayContent();
+          });
         });
     this.$dom.find('.csvfile').click(() => $(event.currentTarget).val(''))
         .on('change', (event) => {
-          this.uploadCsv(event.currentTarget.files[0])
-              .then(() => this.displayContent());
+          this.uploadCsv(event.currentTarget.files[0]).then(() => {
+            this.$dom.find('#edit-button').attr('disabled', true);
+            this.displayContent();
+          });
         });
 
     // Bind buttons.
@@ -171,20 +247,28 @@ class Literature {
 
     this.$dom.find('#reset-button').click(() => {
       this.resetContent();
+      this.resetMatch();
       this.other.resetMatch();
+    });
+
+    this.$dom.find('#save-button').click(() => {
+      if (this.type == 'xml') {
+        const xml = generateXml(this.content, this.sentences, this.matches);
+        console.log(xml);
+      }
     });
 
     // Bind lighlights.
     this.$dom.on('mouseenter', '.sentence.highlight', (event) => {
-      const $sentence = $(event.currentTarget);
-      this.highlightSentence($sentence.data('identity'));
-      this.other.highlightSentence($sentence.data('identity'));
+      const id = $(event.currentTarget).data('identity');
+      this.highlightSentence(id);
+      this.other.highlightSentence(id);
     }).on('mouseleave', '.sentence.highlight', (event) => {
       this.removeHighlight();
       this.other.removeHighlight();
     }).on('click', '.sentence.highlight', (event) => {
-      const $sentence = $(event.currentTarget);
-      this.other.scrollToLongest($sentence.data('identity'));
+      const id = $(event.currentTarget).data('identity');
+      this.other.scrollToLongest(id);
     });
   }
 }
