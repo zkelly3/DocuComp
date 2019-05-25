@@ -193,13 +193,13 @@ function lcs(worda, wordb) {
     for (let j=1; j<=n2; j++) {
       if (a[i] == b[j]) {
         len[i][j] = len[i-1][j-1] + 1;
-        prev[i][j] = 0; // ���W
+        prev[i][j] = 'topleft';
       } else if (len[i-1][j] < len[i][j-1]) {
         len[i][j] = len[i][j-1];
-        prev[i][j] = 1; // ��
+        prev[i][j] = 'left';
       } else {
         len[i][j] = len[i-1][j];
-        prev[i][j] = 2; // �W
+        prev[i][j] = 'top';
       }
     }
   }
@@ -210,14 +210,14 @@ function printLcs(a, prev, len, i, j) {
   let res = '';
   let l = len[i][j];
   while (l > 0) {
-    if (prev[i][j] == 0) {
+    if (prev[i][j] == 'topleft') {
       l--;
       res += a[i];
       i--;
       j--;
-    } else if (prev[i][j] == 1) {
+    } else if (prev[i][j] == 'left') {
       j--;
-    } else if (prev[i][j] == 2) {
+    } else if (prev[i][j] == 'top') {
       i--;
     }
   }
