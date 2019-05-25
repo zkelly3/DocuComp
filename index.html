@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>文本比對</title>
+<link rel="stylesheet" type="text/css" href="./comp.css">
+<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.0.js"></script>
+<script src="./papaparse.js"></script>
+<script src="./jquery.selection.js"></script>
+<script src="./logic.js"></script>
+<script src="./comp.js"></script>
+</head>
+<body>
+<div id="container">
+<div id="up-container">
+</div>
+<div id="center-container">
+  <div class="text-area center-left">
+    <div class="content" data-mode='normal' id="doc-reference">
+      <div class="contentblock" id="nocontent">
+        <span>
+            請<label><a class="textlink" id="uploadtxtlink">上傳文件 (txt)</a><input type=file class="nodiv txtfile"/></label>、
+            <br/><label><a class="textlink" id="uploadxmllink">上傳文件 (xml)</a><input type=file class="nodiv xmlfile"/></label>、
+            <br/><label><a class="textlink" id="uploadcsvlink">上傳文件 (csv)</a><input type=file class="nodiv csvfile"/></label>
+            <br/>或<br/>
+            <a class="textlink" id="editlink">編輯文件</a>
+        </span>
+      </div>
+      <div class="contentblock nodiv" id="hascontent">
+        <div class="textblock">
+        </div>
+        <button class="textbutton" id="edit-button">編輯文件</button>
+        <button class="textbutton" id="reset-button">重新上傳</button>
+        <button class="textbutton" id="savedoc">輸出結果</button>
+      </div>
+    </div>
+  </div>
+  <div id="button-area">
+    門檻值：<input type=number id="threshold" value="80"/>%
+    <button id="search-button">=&gt;</button>
+  </div>
+  <div class="text-area center-right">
+    <div class="content" data-mode='normal' id="doc-target">
+      <div class="contentblock" id="nocontent">
+        <span>
+            請<label><a class="textlink" id="uploadtxtlink">上傳文件 (txt)</a><input type=file class="nodiv txtfile"/></label>、
+            <br/><label><a class="textlink" id="uploadxmllink">上傳文件 (xml)</a><input type=file class="nodiv xmlfile"/></label>
+            <br/>或<br/>
+            <a class="textlink" id="editlink">編輯文件</a>
+        </span>
+      </div>
+      <div class="contentblock nodiv" id="hascontent">
+        <div class="textblock">
+        </div>
+        <button class="textbutton" id="edit-button">編輯文件</button>
+        <button class="textbutton" id="reset-button">重新上傳</button>
+        <button class="textbutton" id="savedoc">輸出結果</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="bottom-container">
+</div>
+</body>
+</html>

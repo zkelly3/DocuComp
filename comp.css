@@ -1,0 +1,94 @@
+body, html {
+  height: 100%;
+}
+#container {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+#up-container {
+    position: relative;
+    height: 10%;
+    width: 100%;
+    background-color: #FFFFFB;
+}
+#center-container {
+    position: relative;
+    height: 80%;
+    width: 100%;
+    text-align: center;
+    background-color: #FCFAF2;
+}
+.text-area {
+    position: relative;
+    display: inline-block;
+    height:98%;
+    width: 45%;
+    border: 2px dashed black;
+    margin: 1px;
+}
+#button-area {
+    position: relative;
+    display: inline-block;
+    height: 98%;
+    width: 5%;
+    font-size: 13px;
+}
+#threshold {
+    width: 50px;
+}
+.content {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    background-color: blue;
+}
+.contentblock {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    line-height: 100%;
+}
+#nocontent span {
+    vertical-align:middle;
+    display:inline-block;
+}
+.textblock {
+    padding: 8px;
+    position: relative;
+    height: 90%;
+    overflow: auto;
+    word-break: normal;
+    word-wrap: break-all;
+    white-space: pre-wrap;
+}
+.highlight {
+    background-color: yellow;
+}
+.highlight:hover {
+    background-color: orange;
+}
+.overhighlight {
+    background-color: orange !important;
+}
+.textlink {
+    color: #58B2DC;
+    cursor: pointer;
+}
+.textbutton {
+    margin: 2px;
+    height: 20px;
+    width: 75px;
+    background-color: #FAD689;
+    border: 2px outset white;
+    cursor: pointer;
+}
+.nodiv {
+    display: none;
+}
+.typeword {
+    resize: none;
+}
