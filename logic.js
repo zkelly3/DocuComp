@@ -49,17 +49,40 @@ function tokenize(doc) {
       }
       tmp = '';
       istag = false;
-    } else if (doc[i] == '') {
-      if (tmp) {
-        tokens.push([tmp, 'word']);
-        tmp = '';
-      }
-      tokens.push([doc[i], 'tag']);
     } else if (doc[i] != '\n') {
       tmp += doc[i];
     }
   }
+  
+  if (tmp) {
+    tokens.push(tmp);
+    tmp = '';
+  }
+  
   return tokens;
+}
+
+function tokenizeTxt(doc) {
+  const tokens = [];
+  let tmp = '';
+  for (let i=0; i<doc.length; i++) {
+    if (doc[i] == '\n') {
+      if (tmp) {
+        tokens.push([tmp, 'word']);
+        tmp = '';
+      }
+      tokens.push(['<br/>', 'enter']);
+    } else {
+      tmp += doc[i];
+    }
+  }
+  
+  if (tmp) {
+    tokens.push([tmp, 'word']);
+    tmp = '';
+  }
+  
+  return tokens; 
 }
 
 /* exported matchText */

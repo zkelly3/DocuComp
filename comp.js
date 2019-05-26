@@ -35,12 +35,7 @@ function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
   return [index, offset];
 }
 
-function generateXml(content, sentences, matches) {
-  const xmlDoc = $.parseXML(content);
-  const $xml = $(xmlDoc);
-  const docCont = $xml.find('doc_content').html();
-
-  const tokens = tokenize(docCont);
+function insertAlignTags(tokens, sentences, matches) {
   const flattenMatches = flattenMatched(matches);
   let ptr = 0;
   let state = [0, 0];
@@ -49,7 +44,7 @@ function generateXml(content, sentences, matches) {
     if (ptr < flattenMatches.length && flattenMatches[ptr].index == i) {
       state = insertTag(tokens, offset, 'AlignBegin', {
         'Type': 'test',
-        'RedId': flattenMatches[ptr].id,
+        'RefId': flattenMatches[ptr].id,
         'Key': i,
       }, state);
       offset += sentences[i].length;
@@ -59,6 +54,39 @@ function generateXml(content, sentences, matches) {
       offset += sentences[i].length;
     }
   }
+}
+
+function txtToXml(content, sentences, matches) {
+  const tokens = tokenizeTxt(content);
+  console.log(tokens);
+  insertAlignTags(tokens, sentences, matches);
+
+  const docContent = tokens.map((x) => x[0]).join('');
+  const filename = 'test';
+  
+  const result = `
+      <?xml version="1.0"?>
+      <ThdlPrototypeExport>
+      <documents>
+      <document filename="${filename}">
+      <corpus>我的文獻集</corpus>
+      <doc_content>
+      ${docContent}
+      </doc_content>
+      </document>
+      </documents>
+      </ThdlPrototypeExport>`;
+  
+  return result;
+}
+
+function xmlToXml(content, sentences, matches) {
+  const xmlDoc = $.parseXML(content);
+  const $xml = $(xmlDoc);
+  const docCont = $xml.find('doc_content').html();
+
+  const tokens = tokenize(docCont);
+  insertAlignTags(tokens, sentences, matches);
 
   const result = tokens.map((x) => x[0]).join('');
   $xml.find('doc_content').html(result);
@@ -253,7 +281,10 @@ class Literature {
 
     this.$dom.find('#save-button').click(() => {
       if (this.type == 'xml') {
-        const xml = generateXml(this.content, this.sentences, this.matches);
+        const xml = xmlToXml(this.content, this.sentences, this.matches);
+        console.log(xml);
+      } else if(this.type == 'text') {
+        const xml = txtToXml(this.content, this.sentences, this.matches);
         console.log(xml);
       }
     });
