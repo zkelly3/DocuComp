@@ -62,6 +62,7 @@ function tokenize(doc) {
   return tokens;
 }
 
+/* exported tokenizeTxt */
 function tokenizeTxt(doc) {
   const tokens = [];
   let tmp = '';

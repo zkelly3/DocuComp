@@ -90,7 +90,7 @@ function xmlToXml(content, sentences, matches) {
 
   const result = tokens.map((x) => x[0]).join('');
   $xml.find('doc_content').html(result);
-  return new XMLSerializer().serializeToString($xml.get()[0].documentElement);
+  return new XMLSerializer().serializeToString($xml.get()[0]);
 }
 
 function getText(doc) {
@@ -144,7 +144,7 @@ class Literature {
     return new Promise((resolve, reject) => {
       const freader = new FileReader();
       freader.onload = (e) => {
-        this.type = 'text';
+        this.type = 'txt';
         this.content = e.target.result.trim();
         this.sentences = splitSentence(this.content);
         resolve();
@@ -163,6 +163,18 @@ class Literature {
         resolve();
       };
       freader.readAsText(file);
+    });
+    
+  uploadCsv (file) {
+    return new Promise((resolve, reject) => {
+      const freader = new FileReader();
+      freader.onload = (e) => {
+        this.type = 'csv';
+        this.content = e.target.result.trim();
+        this.sentences = splitSentence(getText(this.content));
+        resolve();
+      };
+      freader.readAsText(file, 'big5');
     });
   }
 
@@ -283,7 +295,7 @@ class Literature {
       if (this.type == 'xml') {
         const xml = xmlToXml(this.content, this.sentences, this.matches);
         console.log(xml);
-      } else if(this.type == 'text') {
+      } else if(this.type == 'txt') {
         const xml = txtToXml(this.content, this.sentences, this.matches);
         console.log(xml);
       }
