@@ -35,18 +35,23 @@ function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
   return [index, offset];
 }
 
-function insertAlignTags(tokens, sentences, matches) {
+function insertAlignTags(tokens, sentences, matches, tags) {
   const flattenMatches = flattenMatched(matches);
   let ptr = 0;
   let state = [0, 0];
   let offset = 0;
   for (let i=0; i < sentences.length; i++) {
     if (ptr < flattenMatches.length && flattenMatches[ptr].index == i) {
-      state = insertTag(tokens, offset, 'AlignBegin', {
+      let params = {
         'Type': 'test',
         'RefId': flattenMatches[ptr].id,
         'Key': i,
-      }, state);
+      };
+      if (tags !== undefined) {
+        params['term'] = tags[params['RefId']];
+      }
+
+      state = insertTag(tokens, offset, 'AlignBegin', params, state);
       offset += sentences[i].length;
       state = insertTag(tokens, offset, 'AlignEnd', {'Key': i}, state);
       ptr++;
@@ -56,44 +61,70 @@ function insertAlignTags(tokens, sentences, matches) {
   }
 }
 
-function txtToXml(content, sentences, matches) {
+function txtToXml(content, sentences, matches, tags) {
   const tokens = tokenizeTxt(content);
-  console.log(tokens);
-  insertAlignTags(tokens, sentences, matches);
+  //console.log(tokens);
+  insertAlignTags(tokens, sentences, matches, tags);
 
   const docContent = tokens.map((x) => x[0]).join('');
   const filename = 'test';
-  
+
   const result = `
-      <?xml version="1.0"?>
-      <ThdlPrototypeExport>
-      <documents>
-      <document filename="${filename}">
-      <corpus>我的文獻集</corpus>
-      <doc_content>
-      ${docContent}
-      </doc_content>
-      </document>
-      </documents>
-      </ThdlPrototypeExport>`;
-  
+<?xml version="1.0"?>
+<ThdlPrototypeExport>
+<documents>
+<document filename="${filename}">
+<corpus>我的文獻集</corpus>
+<doc_content>
+${docContent}
+</doc_content>
+</document>
+</documents>
+</ThdlPrototypeExport>`;
+
   return result;
 }
 
-function xmlToXml(content, sentences, matches) {
+function xmlToXml(content, sentences, matches, tags) {
   const xmlDoc = $.parseXML(content);
   const $xml = $(xmlDoc);
   const docCont = $xml.find('doc_content').html();
 
   const tokens = tokenize(docCont);
-  insertAlignTags(tokens, sentences, matches);
+  insertAlignTags(tokens, sentences, matches, tags);
 
   const result = tokens.map((x) => x[0]).join('');
   $xml.find('doc_content').html(result);
   return new XMLSerializer().serializeToString($xml.get()[0]);
 }
 
-function getText(doc) {
+function csvToXml(content, sentences, matches, tags) {
+  let tokens = [];
+  for(let i = 0; i < sentences.length; i++) {
+    tokens = tokens.concat(tokenizeTxt(sentences[i]));
+  }
+  insertAlignTags(tokens, sentences, matches, tags);
+
+  const docContent = tokens.map((x) => x[0]).join('');
+  const filename = 'test';
+
+  const result = `
+<?xml version="1.0"?>
+<ThdlPrototypeExport>
+<documents>
+<document filename="${filename}">
+<corpus>我的文獻集</corpus>
+<doc_content>
+${docContent}
+</doc_content>
+</document>
+</documents>
+</ThdlPrototypeExport>`;
+
+  return result;
+}
+
+function xmlToTxt(doc) {
   const xmlDoc = $.parseXML(doc);
   const $xml = $(xmlDoc);
   const docCont = $xml.find('doc_content').html();
@@ -108,6 +139,23 @@ function getText(doc) {
     }
   }
   return res;
+}
+
+function csvToTxt(doc) {
+  const data = Papa.parse(doc, {header: true});
+
+  const resTxt = [];
+  const resTag = [];
+  for(let obj of data.data) {
+    const txt = obj['value'].trim();
+    const tag = obj['tag'].trim() || '';
+    if (txt) {
+      resTxt.push(txt);
+      resTag.push(tag);
+    }
+  }
+
+  return [resTxt, resTag];
 }
 
 function splitSentence(doc) {
@@ -159,19 +207,30 @@ class Literature {
       freader.onload = (e) => {
         this.type = 'xml';
         this.content = e.target.result.trim();
-        this.sentences = splitSentence(getText(this.content));
+        this.sentences = splitSentence(xmlToTxt(this.content));
         resolve();
       };
       freader.readAsText(file);
     });
-    
+  }
+
   uploadCsv (file) {
     return new Promise((resolve, reject) => {
       const freader = new FileReader();
       freader.onload = (e) => {
         this.type = 'csv';
         this.content = e.target.result.trim();
-        this.sentences = splitSentence(getText(this.content));
+        const [txts, tags] = csvToTxt(this.content);
+
+        this.sentences = [];
+        this.tags = [];
+        for (let i = 0; i < txts.length; i++) {
+          const s = splitSentence(txts[i]);
+          for (let j = 0; j < s.length; j++) {
+            this.tags.push(tags[i]);
+          }
+          this.sentences = this.sentences.concat(s);
+        }
         resolve();
       };
       freader.readAsText(file, 'big5');
@@ -216,6 +275,20 @@ class Literature {
     }
 
     this.$dom.find('#save-button').removeAttr('disabled');
+  }
+
+  getTags() {
+    if (this.type != 'csv') {
+      console.log('You cannot call this.');
+      return;
+    }
+
+    const tags = {};
+    for (const id of Object.keys(this.longest)) {
+      tags[id] = this.tags[this.longest[id].index];
+    }
+
+    return tags;
   }
 
   resetMatch() {
@@ -292,11 +365,17 @@ class Literature {
     });
 
     this.$dom.find('#save-button').click(() => {
+      let tags = this.other.type == 'csv' ? this.other.getTags() : undefined;
+
       if (this.type == 'xml') {
-        const xml = xmlToXml(this.content, this.sentences, this.matches);
+        const xml = xmlToXml(this.content, this.sentences, this.matches, tags);
         console.log(xml);
       } else if(this.type == 'txt') {
-        const xml = txtToXml(this.content, this.sentences, this.matches);
+        const xml = txtToXml(this.content, this.sentences, this.matches, tags);
+        console.log(xml);
+      } else if(this.type == 'csv') {
+        tags = this.getTags();
+        const xml = csvToXml(this.content, this.sentences, this.matches, tags);
         console.log(xml);
       }
     });
