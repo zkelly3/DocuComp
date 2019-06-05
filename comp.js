@@ -1,9 +1,18 @@
-function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
+let docuSkyGetDocsObj = null;
+
+function printList() {
+  for(let i = 0; i < docuSkyGetDocsObj.docList.length; i++) {
+    console.log(docuSkyGetDocsObj.docList[i].docInfo);
+  }
+}
+
+function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0], t_offsets) {
   const attrsString = Object.entries(tagAttrs).map(
       ([key, value]) => value ? `${key}="${value}"` : '').join(' ');
   const tag = `<${tagName} ${attrsString} />`;
 
   let index = 0;
+  let tokens_added = 0;
   for (; i<tokens.length; i++) {
     if (tokens[i][1] == 'word') {
       const curWord = tokens[i][0];
@@ -16,6 +25,7 @@ function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
         ];
         tokens.splice(i, 1, ...newTokens);
         index = i + 1;
+        tokens_added = newTokens.length - 1;
         break;
       }
       cnt += curLen;
@@ -24,6 +34,7 @@ function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
       if (cnt == offset) {
         tokens.splice(i + 1, 0, [tag, 'tag']);
         index = i + 1;
+        tokens_added = 1;
         break;
       }
     }
@@ -31,29 +42,40 @@ function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0]) {
   if (i == tokens.length) {
     tokens.push([tag, 'tag']);
     index = i;
+    tokens_added = 1;
+  }
+  
+  if (t_offsets !== undefined) {
+    for (let i = 0; i < t_offsets.length; i++) {
+      if (t_offsets[i] >= index) {
+        t_offsets[i] += tokens_added;
+      }
+    }
   }
   return [index, offset];
 }
 
-function insertAlignTags(tokens, sentences, matches, tags) {
+function insertAlignTags(tokens, sentences, matches, tags, t_offsets) {
   const flattenMatches = flattenMatched(matches);
   let ptr = 0;
   let state = [0, 0];
   let offset = 0;
-  for (let i=0; i < sentences.length; i++) {
+  let s_ind = 0;
+  for (let i = 0; i < sentences.length; i++) {
     if (ptr < flattenMatches.length && flattenMatches[ptr].index == i) {
       let params = {
-        'Type': 'test',
+        'Type': 'lcsmatch',
         'RefId': flattenMatches[ptr].id,
         'Key': i,
       };
       if (tags !== undefined) {
-        params['term'] = tags[params['RefId']];
+        params['Term'] = tags[params['RefId']];
       }
 
-      state = insertTag(tokens, offset, 'AlignBegin', params, state);
+      state = insertTag(tokens, offset, 'AlignBegin', params, state, t_offsets);
       offset += sentences[i].length;
-      state = insertTag(tokens, offset, 'AlignEnd', {'Key': i}, state);
+      state = insertTag(tokens, offset, 'AlignEnd', {'Key': i}, state, t_offsets);
+
       ptr++;
     } else {
       offset += sentences[i].length;
@@ -63,7 +85,6 @@ function insertAlignTags(tokens, sentences, matches, tags) {
 
 function txtToXml(content, sentences, matches, tags) {
   const tokens = tokenizeTxt(content);
-  //console.log(tokens);
   insertAlignTags(tokens, sentences, matches, tags);
 
   const docContent = tokens.map((x) => x[0]).join('');
@@ -88,13 +109,35 @@ ${docContent}
 function xmlToXml(content, sentences, matches, tags) {
   const xmlDoc = $.parseXML(content);
   const $xml = $(xmlDoc);
-  const docCont = $xml.find('doc_content').html();
-
-  const tokens = tokenize(docCont);
-  insertAlignTags(tokens, sentences, matches, tags);
-
-  const result = tokens.map((x) => x[0]).join('');
-  $xml.find('doc_content').html(result);
+  
+  let tokens = [];
+  const t_offsets = [0];
+  
+  $xml.find('doc_content').each((ind, ele) => {
+    const docCont = $(ele).html();
+    const tokens_tmp = tokenize(docCont);
+    tokens = tokens.concat(tokens_tmp);
+    t_offsets.push(tokens.length);
+  });
+  
+  insertAlignTags(tokens, sentences, matches, tags, t_offsets);
+  
+  //const result = tokens.map((x) => x[0]).join('');
+  //$xml.find('doc_content').html(result);
+  
+  console.log('t_offsets', t_offsets);
+  
+  $xml.find('doc_content').each((ind, ele) => {
+    const start = t_offsets[ind];
+    const end = t_offsets[ind+1];
+    
+    let result = '';
+    for(let i = start; i < end; i++) {
+      result += tokens[i][0];
+    }
+    ele.outerHTML = '<doc_content>' + result + '</doc_content>';
+  });
+  
   return new XMLSerializer().serializeToString($xml.get()[0]);
 }
 
@@ -125,10 +168,7 @@ ${docContent}
 }
 
 function xmlToTxt(doc) {
-  const xmlDoc = $.parseXML(doc);
-  const $xml = $(xmlDoc);
-  const docCont = $xml.find('doc_content').html();
-  const tokens = tokenize(docCont);
+  const tokens = tokenize(doc);
 
   let res = '';
   for (let i=0; i<tokens.length; i++) {
@@ -158,29 +198,6 @@ function csvToTxt(doc) {
   return [resTxt, resTag];
 }
 
-function splitSentence(doc) {
-  const endSymbol = ['。', '」', '？', '！'];
-  const sentences = [];
-  let p = 0;
-  for (let i = 0; i < doc.length; i++) {
-    if (endSymbol.includes(doc[i])) {
-      const sentence = doc.substring(p, i + 1);
-      if (sentence.length == 1 && sentences.length > 0) {
-        sentences[sentences.length-1] =
-            sentences[sentences.length-1] + sentence;
-      } else {
-        sentences.push(sentence);
-      }
-      p = i + 1;
-    }
-  }
-  if (p < doc.length) {
-    const sentence = doc.substring(p, doc.length);
-    sentences.push(sentence);
-  }
-  return sentences;
-}
-
 class Literature {
   constructor($dom) {
     this.$dom = $dom;
@@ -207,7 +224,17 @@ class Literature {
       freader.onload = (e) => {
         this.type = 'xml';
         this.content = e.target.result.trim();
-        this.sentences = splitSentence(xmlToTxt(this.content));
+
+        const xmlDoc = $.parseXML(this.content);
+        const $xml = $(xmlDoc);
+
+        this.sentences = [];
+        this.offsets = [0];
+        $xml.find('doc_content').each((ind, ele) => {
+          const s = splitSentence(xmlToTxt($(ele).html()));
+          this.sentences = this.sentences.concat(s);
+          this.offsets.push(this.sentences.length);
+        });
         resolve();
       };
       freader.readAsText(file);
@@ -341,6 +368,11 @@ class Literature {
             this.displayContent();
           });
         });
+    this.$dom.find('#docuxmllink').on('click', (event) => {
+      var target = 'USER';
+      var db = '', corpus = '';             // empty string: force the simpleUI to display a menu for user selection
+      docuSkyGetDocsObj.getDbCorpusDocuments(target, db, corpus, event, printList);
+    });
 
     // Bind buttons.
     this.$dom.find('#edit-button').click(() => {
@@ -398,6 +430,8 @@ class Literature {
 const literatures = {};
 
 $(function() {
+  docuSkyGetDocsObj = docuskyGetDbCorpusDocumentsSimpleUI;
+
   $('.content').each(function() {
     const $this = $(this);
     literatures[$this.attr('id')] = new Literature($this);

@@ -27,6 +27,29 @@ class DisjointSet {
   }
 }
 
+function splitSentence(doc) {
+  const endSymbol = ['。', '」', '？', '！'];
+  const sentences = [];
+  let p = 0;
+  for (let i = 0; i < doc.length; i++) {
+    if (endSymbol.includes(doc[i])) {
+      const sentence = doc.substring(p, i + 1);
+      if (sentence.length == 1 && sentences.length > 0) {
+        sentences[sentences.length-1] =
+            sentences[sentences.length-1] + sentence;
+      } else {
+        sentences.push(sentence);
+      }
+      p = i + 1;
+    }
+  }
+  if (p < doc.length) {
+    const sentence = doc.substring(p, doc.length);
+    sentences.push(sentence);
+  }
+  return sentences;
+}
+
 /* exported tokenize */
 function tokenize(doc) {
   const tokens = [];
