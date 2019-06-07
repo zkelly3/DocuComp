@@ -1,14 +1,10 @@
 let docuSkyGetDocsObj = null;
-
-function printList() {
-  for(let i = 0; i < docuSkyGetDocsObj.docList.length; i++) {
-    console.log(docuSkyGetDocsObj.docList[i].docInfo);
-  }
-}
+let target = 'USER';
+let db = '', corpus = ''; // empty string: force the simpleUI to display a menu for user selection
 
 function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0], t_offsets) {
   const attrsString = Object.entries(tagAttrs).map(
-      ([key, value]) => value ? `${key}="${value}"` : '').join(' ');
+      ([key, value]) => value !== undefined ? `${key}="${value}"` : '').join(' ');
   const tag = `<${tagName} ${attrsString} />`;
 
   let index = 0;
@@ -90,8 +86,7 @@ function txtToXml(content, sentences, matches, tags) {
   const docContent = tokens.map((x) => x[0]).join('');
   const filename = 'test';
 
-  const result = `
-<?xml version="1.0"?>
+  const result = `<?xml version="1.0"?>
 <ThdlPrototypeExport>
 <documents>
 <document filename="${filename}">
@@ -125,8 +120,6 @@ function xmlToXml(content, sentences, matches, tags) {
   //const result = tokens.map((x) => x[0]).join('');
   //$xml.find('doc_content').html(result);
   
-  console.log('t_offsets', t_offsets);
-  
   $xml.find('doc_content').each((ind, ele) => {
     const start = t_offsets[ind];
     const end = t_offsets[ind+1];
@@ -151,8 +144,7 @@ function csvToXml(content, sentences, matches, tags) {
   const docContent = tokens.map((x) => x[0]).join('');
   const filename = 'test';
 
-  const result = `
-<?xml version="1.0"?>
+  const result = `<?xml version="1.0"?>
 <ThdlPrototypeExport>
 <documents>
 <document filename="${filename}">
@@ -205,7 +197,7 @@ class Literature {
     this.bindDomEvents();
   }
 
-  uploadText(file) {
+  uploadTxt(file) {
     return new Promise((resolve, reject) => {
       const freader = new FileReader();
       freader.onload = (e) => {
@@ -261,6 +253,32 @@ class Literature {
         resolve();
       };
       freader.readAsText(file, 'big5');
+    });
+  }
+  
+  getDocuXml() {
+    let documents = {};
+    for (let i in docuSkyGetDocsObj.docList) {
+      documents[docuSkyGetDocsObj.docList[i].number] = docuSkyGetDocsObj.docList[i].docInfo
+    }
+    
+    let exporter = new DocuSkyExporter();
+    let spotlights = docuSkyGetDocsObj.spotlights;
+    let featureAnalysisSettings = docuSkyGetDocsObj.featureAnalysisSettings;
+    let xml = '<?xml version="1.0"?>\n' + exporter.generateDocuXml(documents, db, corpus, spotlights, featureAnalysisSettings);
+    
+    this.type = 'xml';
+    this.content = xml.trim();
+
+    const xmlDoc = $.parseXML(this.content);
+    const $xml = $(xmlDoc);
+
+    this.sentences = [];
+    this.offsets = [0];
+    $xml.find('doc_content').each((ind, ele) => {
+      const s = splitSentence(xmlToTxt($(ele).html()));
+      this.sentences = this.sentences.concat(s);
+      this.offsets.push(this.sentences.length);
     });
   }
 
@@ -349,33 +367,52 @@ class Literature {
     // Bind upload file.
     this.$dom.find('.txtfile').click(() => $(event.currentTarget).val(''))
         .on('change', (event) => {
-          this.uploadText(event.currentTarget.files[0]).then(() => {
-            this.$dom.find('#edit-button').removeAttr('disabled');
+          this.uploadTxt(event.currentTarget.files[0]).then(() => {
+            this.$dom.find('#edit-old').removeAttr('disabled');
             this.displayContent();
           });
         });
     this.$dom.find('.xmlfile').click(() => $(event.currentTarget).val(''))
         .on('change', (event) => {
           this.uploadXml(event.currentTarget.files[0]).then(() => {
-            this.$dom.find('#edit-button').attr('disabled', true);
+            this.$dom.find('#edit-old').attr('disabled', true);
             this.displayContent();
           });
         });
     this.$dom.find('.csvfile').click(() => $(event.currentTarget).val(''))
         .on('change', (event) => {
           this.uploadCsv(event.currentTarget.files[0]).then(() => {
-            this.$dom.find('#edit-button').attr('disabled', true);
+            this.$dom.find('#edit-old').attr('disabled', true);
             this.displayContent();
           });
         });
     this.$dom.find('#docuxmllink').on('click', (event) => {
-      var target = 'USER';
-      var db = '', corpus = '';             // empty string: force the simpleUI to display a menu for user selection
-      docuSkyGetDocsObj.getDbCorpusDocuments(target, db, corpus, event, printList);
+      docuSkyGetDocsObj.getDbCorpusDocuments(target, db, corpus, event, () => {
+        this.getDocuXml();
+        this.$dom.find('#edit-old').attr('disabled', true);
+        this.displayContent();
+      });
+    });
+    this.$dom.find('#edit-new').on('click', () => {
+      this.type = 'txt';
+      this.content = '';
+      this.sentences = [];
+      
+      const $button = this.$dom.find('#edit-old');
+      const $textblock = this.$dom.find('.textblock');
+      
+      $textblock.attr('contenteditable', 'true');
+      $button.text('結束編輯');
+      
+      this.displayContent();
+      this.mode = 'edit';
     });
 
     // Bind buttons.
-    this.$dom.find('#edit-button').click(() => {
+    this.$dom.find('#edit-old').click(() => {
+      this.resetMatch();
+      this.other.resetMatch();
+      
       const $button = $(event.currentTarget);
       const $textblock = this.$dom.find('.textblock');
 
@@ -384,9 +421,14 @@ class Literature {
         $textblock.attr('contenteditable', 'true');
         $button.text('結束編輯');
       } else {
+        this.content = $textblock.text();
+        this.sentences = splitSentence(this.content);
+        
         this.mode = 'normal';
         $textblock.removeAttr('contenteditable');
         $button.text('編輯文件');
+        
+        this.displayContent();
       }
     });
 
@@ -399,20 +441,28 @@ class Literature {
     this.$dom.find('#save-button').click(() => {
       let tags = this.other.type == 'csv' ? this.other.getTags() : undefined;
 
+      const filename = this.$dom.attr('id').substr(4) + '.xml';
       if (this.type == 'xml') {
         const xml = xmlToXml(this.content, this.sentences, this.matches, tags);
-        console.log(xml);
+        
+        const blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
+        saveAs(blob, filename);
+        
       } else if(this.type == 'txt') {
         const xml = txtToXml(this.content, this.sentences, this.matches, tags);
-        console.log(xml);
+        
+        const blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
+        saveAs(blob, filename);
       } else if(this.type == 'csv') {
         tags = this.getTags();
         const xml = csvToXml(this.content, this.sentences, this.matches, tags);
-        console.log(xml);
+        
+        const blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
+        saveAs(blob, filename);
       }
     });
 
-    // Bind lighlights.
+    // Bind highlights.
     this.$dom.on('mouseenter', '.sentence.highlight', (event) => {
       const id = $(event.currentTarget).data('identity');
       this.highlightSentence(id);

@@ -3,81 +3,89 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>文本比對</title>
+    <link rel="stylesheet" type="text/css" href="./bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="./comp.css">
-    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.0.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.js"></script>
     <script src="./jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="./bootstrap.min.js"></script>
     <script src="./papaparse.js"></script>
     <script src="./jquery.selection.js"></script>
+    <script src="https://docusky.org.tw/DocuSky/js/FileSaver.min.js"></script>
     <script src="http://docusky.org.tw/DocuSky/js.ui/docusky.ui.getDbCorpusDocumentsSimpleUI.js"></script>
+    <script src="./download.js"></script>
     <script src="./logic.js"></script>
     <script src="./comp.js"></script>
   </head>
   <body>
-    <div id="container">
-      <div id="up-container">
+    <div class="container" id="container">
+      <div class="row" id="up-container">
       </div>
-      <div id="center-container">
-        <div class="text-area center-left">
-          <div class="content" data-mode='normal' id="doc-reference">
-            <div class="contentblock" id="nocontent">
-              <span>
-                請<a class="textlink" id="docuxmllink">從 Docusky 載入文件 (xml)</a><!-- Use comment to eliminate space
-                --><br/>
-                <label><a class="textlink" id="uploadtxtlink">上傳文件 (txt)</a>
-                <input type=file class="nodiv txtfile"/>
-                </label>、<br/>
-                <label>
-                  <a class="textlink" id="uploadxmllink">上傳文件 (xml)</a>
-                  <input type=file class="nodiv xmlfile"/>
-                </label><br/>
-                <label>
-                  <a class="textlink" id="uploadcsvlink">上傳文件 (csv)</a>
-                  <input type=file class="nodiv csvfile"/>
-                </label><br/>
-                或<br/>
-                <a class="textlink" id="editlink">編輯文件</a>
-              </span>
-            </div>
-            <div class="contentblock nodiv" id="hascontent">
-              <div class="textblock">
-              </div>
-              <button class="textbutton" id="edit-button">編輯文件</button>
-              <button class="textbutton" id="reset-button">重新上傳</button>
-              <button class="textbutton" id="save-button" disabled>輸出結果</button>
+      <div class="row" id="center-container">
+        <div class="col-5 text-area content" data-mode='normal' id="doc-reference">
+          <div class="contentblock row" id="nocontent">
+            <div class="col-3 align-self-start dropdown">
+              <button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" >
+                載入文件
+              </button>
+              <ul class="dropdown-menu">
+                <li><a href="#" class="dropdown-item" id="docuxmllink">從DocuSky載入</a></li>
+                <li><label class="dropdown-item"><a>上傳XML檔</a>
+                  <input type=file class="nodiv xmlfile"/></label></li>
+                <li class="dropdown-divider"></li>
+                <li><label class="dropdown-item"><a>上傳CSV檔</a>
+                  <input type=file class="nodiv csvfile"/></label></li>
+                <li class="dropdown-divider"></li>
+                <li><label class="dropdown-item"><a>上傳TXT檔</a>
+                  <input type=file class="nodiv txtfile"/></label></li>
+                <li><a href="#" class="dropdown-item" id="edit-new">編輯文件</a></li>
+              </ul>
             </div>
           </div>
-        </div>
-        <div id="button-area">
-          門檻值：<input type=number id="threshold" value="80"/>%
-          <button id="search-button">=&gt;</button>
-        </div>
-        <div class="text-area center-right">
-          <div class="content" data-mode='normal' id="doc-target">
-            <div class="contentblock" id="nocontent">
-              <span>
-                請<label><!-- Use comment to eliminate space
-                --><a class="textlink" id="uploadtxtlink">上傳文件 (txt)</a>
-                <input type=file class="nodiv txtfile"/>
-                </label>、<br/>
-                <label>
-                  <a class="textlink" id="uploadxmllink">上傳文件 (xml)</a>
-                  <input type=file class="nodiv xmlfile"/>
-                </label><br/>
-                或<br/>
-                <a class="textlink" id="editlink">編輯文件</a>
-              </span>
+          <div class="contentblock nodiv" id="hascontent">
+            <div class="textblock">
             </div>
-            <div class="contentblock nodiv" id="hascontent">
-              <div class="textblock">
-              </div>
-              <button class="textbutton" id="edit-button">編輯文件</button>
-              <button class="textbutton" id="reset-button">重新上傳</button>
-              <button class="textbutton" id="save-button" disabled>輸出結果</button>
+            <button class="btn btn-outline-secondary btn-sm" id="edit-old">編輯文件</button>
+            <button class="btn btn-outline-secondary btn-sm" id="reset-button">重新上傳</button>
+            <button class="btn btn-outline-secondary btn-sm" id="save-button" disabled>輸出結果</button>
+          </div>
+        </div>
+        <div class="col-2">
+          <div class="center-area">
+            門檻值：<input type=number id="threshold" value="80"/>%
+            <button id="search-button">=&gt;</button>
+          </div>
+        </div>
+        <div class="col-5 text-area content" data-mode='normal' id="doc-target">
+          <div class="contentblock row" id="nocontent">
+            <div class="col-3 align-self-start dropdown">
+              <button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" >
+                載入文件
+              </button>
+              <ul class="dropdown-menu">
+                <li><a href="#" class="dropdown-item" id="docuxmllink">從DocuSky載入</a></li>
+                <li><label class="dropdown-item"><a>上傳XML檔</a>
+                  <input type=file class="nodiv xmlfile"/></label></li>
+                <li class="dropdown-divider"></li>
+                <li><label class="dropdown-item"><a>上傳CSV檔</a>
+                  <input type=file class="nodiv csvfile"/></label></li>
+                <li class="dropdown-divider"></li>
+                <li><label class="dropdown-item"><a>上傳TXT檔</a>
+                  <input type=file class="nodiv txtfile"/></label></li>
+                <li><a href="#" class="dropdown-item" id="edit-new">編輯文件</a></li>
+              </ul>
             </div>
+          </div>
+          <div class="contentblock nodiv" id="hascontent">
+            <div class="textblock">
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" id="edit-old">編輯文件</button>
+            <button class="btn btn-outline-secondary btn-sm" id="reset-button">重新上傳</button>
+            <button class="btn btn-outline-secondary btn-sm" id="save-button" disabled>輸出結果</button>
           </div>
         </div>
       </div>
-      <div id="bottom-container">
+      <div class="row" id="bottom-container">
       </div>
   </body>
 </html>
