@@ -179,8 +179,8 @@ function csvToTxt(doc) {
   const resTxt = [];
   const resTag = [];
   for(let obj of data.data) {
-    const txt = obj['value'].trim();
-    const tag = obj['tag'].trim() || '';
+    const txt = obj['tagVal'].trim();
+    const tag = obj['@Term'].trim() || '';
     if (txt) {
       resTxt.push(txt);
       resTag.push(tag);
