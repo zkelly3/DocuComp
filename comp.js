@@ -492,12 +492,32 @@ $(function() {
 
   reference.other = target;
   target.other = reference;
-
+  
+  
+  /* compare */
   $('#search-button').click(() => {
+    /* loading scene */
+    var loading = pleaseWait({
+      logo: '',
+      backgroundColor: 'rgba(150, 150, 150, 0.3)',
+      loadingHtml: '<div class="sk-rotating-plane"></div>'
+    });
+    
     const threshold = $('#threshold').val() / 100;
-    const [referenceRes, targetRes] =
-        matchText(reference.sentences, target.sentences, threshold);
-    reference.setMatch(referenceRes);
-    target.setMatch(targetRes);
+    const oldtime = (new Date()).getTime() / 1000;
+    setTimeout(() => {
+      const [referenceRes, targetRes] =
+          matchText(reference.sentences, target.sentences, threshold);
+      loading.finish();
+      
+      /* time debug
+      const newtime = (new Date()).getTime() / 1000;
+      console.log(newtime - oldtime);
+      */
+      
+      reference.setMatch(referenceRes);
+      target.setMatch(targetRes);
+    }, 100);
+    
   });
 });

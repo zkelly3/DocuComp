@@ -56,25 +56,6 @@ label.dropdown-item{
 .overhighlight {
     background-color: orange !important;
 }
-.textlink {
-    color: #fff8c6;
-    cursor: pointer;
-}
-.textbutton {
-    margin: 2px;
-    height: 20px;
-    min-width: 75px;
-    background-color: #fff8c6;
-    font-size: 12px;
-    border: 2px outset white;
-    cursor: pointer;
-}
-.textbutton:hover {
-    -webkit-filter: brightness(105%);
-}
-.textbutton:active {
-    -webkit-filter: brightness(95%);
-}
 .center-area {
     position: absolute;
     top: 50%;
