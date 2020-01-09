@@ -27,88 +27,6 @@ class DisjointSet {
   }
 }
 
-function splitSentence(doc) {
-  const endSymbol = ['。', '」', '？', '！'];
-  const sentences = [];
-  let p = 0;
-  for (let i = 0; i < doc.length; i++) {
-    if (endSymbol.includes(doc[i])) {
-      const sentence = doc.substring(p, i + 1);
-      if (sentence.length == 1 && sentences.length > 0) {
-        sentences[sentences.length-1] =
-            sentences[sentences.length-1] + sentence;
-      } else {
-        sentences.push(sentence);
-      }
-      p = i + 1;
-    }
-  }
-  if (p < doc.length) {
-    const sentence = doc.substring(p, doc.length);
-    sentences.push(sentence);
-  }
-  return sentences;
-}
-
-/* exported tokenize */
-function tokenize(doc) {
-  const tokens = [];
-  let tmp = '';
-  let istag = false;
-  for (let i=0; i<doc.length; i++) {
-    if (doc[i] == '<' && !istag) {
-      if (tmp) {
-        tokens.push([tmp, 'word']);
-        tmp = '';
-      }
-      istag = true;
-      tmp += doc[i];
-    } else if (doc[i] == '>' && istag) {
-      tmp += doc[i];
-      if (tmp === '<br/>') {
-        tokens.push([tmp, 'enter']);
-      } else {
-        tokens.push([tmp, 'tag']);
-      }
-      tmp = '';
-      istag = false;
-    } else if (doc[i] != '\n') {
-      tmp += doc[i];
-    }
-  }
-  
-  if (tmp) {
-    tokens.push(tmp);
-    tmp = '';
-  }
-  
-  return tokens;
-}
-
-/* exported tokenizeTxt */
-function tokenizeTxt(doc) {
-  const tokens = [];
-  let tmp = '';
-  for (let i=0; i<doc.length; i++) {
-    if (doc[i] == '\n') {
-      if (tmp) {
-        tokens.push([tmp, 'word']);
-        tmp = '';
-      }
-      tokens.push(['<br/>', 'enter']);
-    } else {
-      tmp += doc[i];
-    }
-  }
-  
-  if (tmp) {
-    tokens.push([tmp, 'word']);
-    tmp = '';
-  }
-  
-  return tokens; 
-}
-
 /* exported matchText */
 function matchText(doc1, doc2, threshold=0.8) {
   const disjointSet = new DisjointSet(doc1.length + doc2.length);
@@ -276,6 +194,16 @@ function wordCount(sentence) {
   for (let i=0; i<sentence.length; i++) {
     if (!(sentence[i] in result)) result[sentence[i]] = 0;
     result[sentence[i]]++;
+  }
+  return result;
+}
+
+function genMapping(arr1, arr2) {
+  const result = [];
+  for (let i=0; i<arr1.length; i++) {
+    for (let j=0; j<arr2.length; j++) {
+      result.push([i, j])
+    }
   }
   return result;
 }

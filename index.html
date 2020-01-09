@@ -6,7 +6,7 @@
     <link rel="stylesheet" type="text/css" href="./bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="./spinkit.css">
     <link rel="stylesheet" type="text/css" href="./please-wait.css">
-    <link rel="stylesheet" type="text/css" href="./comp.css">
+    <link rel="stylesheet" type="text/css" href="./main.css">
     <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.js"></script>
     <script src="./jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
@@ -17,11 +17,12 @@
     <script src="https://docusky.org.tw/DocuSky/js/FileSaver.min.js"></script>
     <script src="http://docusky.org.tw/DocuSky/js.ui/docusky.ui.getDbCorpusDocumentsSimpleUI.js"></script>
     <script src="./download.js"></script>
-    <script src="./logic.js"></script>
-    <script src="./comp.js"></script>
+    <script src="./texthandle.js"></script>
+    <script src="./main.js"></script>
   </head>
   <body>
     <div class="container" id="container">
+      <iframe src="comp.html" class="compare-space nodiv" id="comparePage"></iframe>
       <div class="row" id="up-container">
       </div>
       <div class="row" id="center-container">
@@ -50,14 +51,12 @@
             </div>
             <button class="btn btn-outline-secondary btn-sm" id="edit-old">編輯文件</button>
             <button class="btn btn-outline-secondary btn-sm" id="reset-button">重新上傳</button>
-            <button class="btn btn-outline-secondary btn-sm" id="save-button" disabled>輸出結果</button>
           </div>
         </div>
-        <div class="col-2">
-          <div class="center-area">
-            門檻值：<input type=number id="threshold" value="80"/>%
-            <button id="search-button">=&gt;</button>
-          </div>
+        <div class="col-2  center-area">
+          <button class="btn btn-secondary compare">
+            確定文本
+          </button>
         </div>
         <div class="col-5 text-area content" data-mode='normal' id="doc-target">
           <div class="contentblock row" id="nocontent">
@@ -84,7 +83,6 @@
             </div>
             <button class="btn btn-outline-secondary btn-sm" id="edit-old">編輯文件</button>
             <button class="btn btn-outline-secondary btn-sm" id="reset-button">重新上傳</button>
-            <button class="btn btn-outline-secondary btn-sm" id="save-button" disabled>輸出結果</button>
           </div>
         </div>
       </div>
