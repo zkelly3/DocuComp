@@ -102,7 +102,7 @@ const literatures = {};
 let matches = {};
 
 function setLoadingMessage(message) {
-  let element = document.querySelector('.pg-loading-html .loading-message');
+  let element = document.querySelector('.pg-loading-html .loading-text');
   if (element) {
     element.innerHTML = message;
   }
@@ -119,9 +119,22 @@ function resetPage() {
   $('#save-result').attr('disabled', true);
 }
 
+let reference_docs = [];
+let target_docs = [];
+
+function makeXml(doc, matches) {
+  var xml = '';
+  if (doc.type == 'xml') {
+    xml = xmlToXml(doc.content, doc.sentences, matches);
+  } else if(doc.type == 'txt') {
+    xml = txtToXml(doc.content, doc.sentences, matches);
+  }
+  return xml;
+}
+
 $(function() {
   $('#cancel').click(() => {
-    parent.postMessage('close', '*');
+    parent.postMessage({'type': 'close'}, '*');
   });
 
   $('.content').each(function() {
@@ -135,14 +148,46 @@ $(function() {
   reference.other = target;
   target.other = reference;
 
-  let reference_docs = [];
-  let target_docs = [];
-
   window.addEventListener("message", (event) => {
     if (event.data['type'] === 'compareData') {
       resetPage();
       reference_docs = [];
       target_docs = [];
+
+      let total_size = 0;
+      let current_size = 0;
+      let too_large = false;
+      const total_limit = 1024*1024*10;
+      const single_limit = 1024*120;
+
+      for (const d of event.data['reference']) {
+        if (too_large) {
+          break;
+        }
+        size = d.content.length * 2
+        total_size += current_size;
+
+        if (total_size >= total_limit || current_size >= single_limit) {
+          too_large = true;
+        }
+      }
+      for (const d of event.data['target']) {
+        if (too_large) {
+          break;
+        }
+        current_size = d.content.length * 2
+        total_size += current_size;
+
+        if (total_size >= total_limit || current_size >= single_limit) {
+          too_large = true;
+        }
+      }
+      if (too_large) {
+        const msg = {};
+        msg['type'] = 'Error';
+        msg['message'] = 'Data too large';
+        parent.postMessage(msg, '*');
+      }
 
       for (const d of event.data['reference']) {
         reference_docs.push(new Document(d));
@@ -165,7 +210,7 @@ $(function() {
     var loading = pleaseWait({
       logo: '',
       backgroundColor: 'rgba(150, 150, 150, 0.3)',
-      loadingHtml: '<p class="loading-message">Reference / Target</p><div class="sk-rotating-plane"></div>'
+      loadingHtml: '<div class="loading-message"><p class="loading-text">Reference / Target</p><button id="cancelall">取消</button></div><div class="sk-rotating-plane"></div>'
     });
 
     $('.select-display').val('w');
@@ -188,7 +233,6 @@ $(function() {
       } else if (e.data.type === 'handlenum') {
         const wording = 'Reference' + e.data.reference + ' / Target' + e.data.target;
         setLoadingMessage(wording);
-        //loading.updateLoadingHtml(wording);
       }
     };
     worker.postMessage({
@@ -196,22 +240,10 @@ $(function() {
       'target_docs': target_docs,
       'threshold': threshold
     });
-    /*
-    setTimeout(() => {
-      for (let i = 0; i < reference_docs.length; i++) {
-        for (let j = 0; j < target_docs.length; j++) {
-          const [referenceRes, targetRes] =
-            matchText(reference_docs[i].sentences, target_docs[j].sentences, threshold);
-          matches['r' + i + ',' + 't' + j] = referenceRes;
-          matches['t' + j + ',' + 'r' + i] = targetRes;
-        }
-      }
-      loading.finish();
-      $('#save-result').attr('disabled', false);
-      $('#left-display').attr('disabled', false);
-      $('#right-display').attr('disabled', false);
-    }, 1000);
-    */
+    $('#cancelall').bind('click', () => {
+      worker.terminate();
+
+    });
   });
 
   $('.select-display').on('change', () => {
@@ -230,8 +262,15 @@ $(function() {
 
   $('#save-result').click(() => {
     const data = {};
-    data['reference'] = reference.matches;
-    data['target'] = target.matches;
+    data['reference'] = [];
+    data['target'] = [];
+    for (let i = 0; i < reference_docs.length; i++){
+      for (let j = 0; j < target_docs.length; j++) {
+        data['reference'].push(makeXml(reference_docs[i], matches['r' + i + ',' + 't' + j], 'reference', 'Matches ' + i+1 + ' to ' + j+1));
+        data['target'].push(makeXml(target_docs[j], matches['t' + j + ',' + 'r' + i], 'target', 'Matches ' + i+1 + ' to ' + j+1));
+      }
+    }
+
     data['type'] = 'matchResult';
     parent.postMessage(data, '*')
   });

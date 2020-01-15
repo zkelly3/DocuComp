@@ -106,7 +106,7 @@ function insertTag(tokens, offset, tagName, tagAttrs, [i=0, cnt=0], t_offsets) {
   return [index, offset];
 }
 
-function insertAlignTags(tokens, sentences, matches, tags, t_offsets) {
+function insertAlignTags(tokens, sentences, matches, t_offsets) {
   const flattenMatches = flattenMatched(matches);
   let ptr = 0;
   let state = [0, 0];
@@ -119,9 +119,11 @@ function insertAlignTags(tokens, sentences, matches, tags, t_offsets) {
         'RefId': flattenMatches[ptr].id,
         'Key': i,
       };
+      /*
       if (tags !== undefined) {
         params['Term'] = tags[params['RefId']];
       }
+      */
 
       state = insertTag(tokens, offset, 'AlignBegin', params, state, t_offsets);
       offset += sentences[i].length;
@@ -134,18 +136,17 @@ function insertAlignTags(tokens, sentences, matches, tags, t_offsets) {
   }
 }
 
-function txtToXml(content, sentences, matches, tags) {
+function txtToXml(content, sentences, matches, file_name='test', corpus_name='我的文獻集') {
   const tokens = tokenizeTxt(content);
-  insertAlignTags(tokens, sentences, matches, tags);
+  insertAlignTags(tokens, sentences, matches);
 
   const docContent = tokens.map((x) => x[0]).join('');
-  const filename = 'test';
 
   const result = `<?xml version="1.0"?>
 <ThdlPrototypeExport>
 <documents>
-<document filename="${filename}">
-<corpus>我的文獻集</corpus>
+<document filename="${file_name}">
+<corpus>"${corpus_name}"</corpus>
 <doc_content>
 ${docContent}
 </doc_content>
@@ -156,7 +157,7 @@ ${docContent}
   return result;
 }
 
-function xmlToXml(content, sentences, matches, tags) {
+function xmlToXml(content, sentences, matches) {
   const xmlDoc = $.parseXML(content);
   const $xml = $(xmlDoc);
 
@@ -170,7 +171,7 @@ function xmlToXml(content, sentences, matches, tags) {
     t_offsets.push(tokens.length);
   });
 
-  insertAlignTags(tokens, sentences, matches, tags, t_offsets);
+  insertAlignTags(tokens, sentences, matches, t_offsets);
 
   //const result = tokens.map((x) => x[0]).join('');
   //$xml.find('doc_content').html(result);

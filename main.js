@@ -256,19 +256,19 @@ class Literature {
 
       const filename = this.$dom.attr('id').substr(4) + '.xml';
       if (this.type == 'xml') {
-        const xml = xmlToXml(this.content, this.sentences, this.matches, tags);
+        const xml = xmlToXml(this.content, this.sentences, this.matches);
 
         const blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
         saveAs(blob, filename);
 
       } else if(this.type == 'txt') {
-        const xml = txtToXml(this.content, this.sentences, this.matches, tags);
+        const xml = txtToXml(this.content, this.sentences, this.matches);
 
         const blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
         saveAs(blob, filename);
       } else if(this.type == 'csv') {
         tags = this.getTags();
-        const xml = csvToXml(this.content, this.sentences, this.matches, tags);
+        const xml = csvToXml(this.content, this.sentences, this.matches);
 
         const blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
         saveAs(blob, filename);
@@ -310,11 +310,16 @@ $(function() {
   target.other = reference;
 
   window.addEventListener("message", (event) => {
-    if (event.data === 'close') {
+    if (event.data.type === 'close') {
       $('#comparePage').addClass('nodiv');
     } else if (event.data['type'] === 'matchResult') {
-      reference.matches = event.data['reference'];
-      target.matches = event.data['target'];
+      for (let i in event.data['reference']) {
+        console.log(i, event.data['reference'][i]);
+      }
+      for (let i in event.data['target']) {
+        console.log(i, event.data['target'][i]);
+      }
+      $('#comparePage').addClass('nodiv');
     }
   }, false) ;
 
